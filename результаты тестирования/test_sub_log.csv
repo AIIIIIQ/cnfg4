@@ -1,0 +1,4 @@
+Instruction,Opcode,Operand,Binary
+LOADC 49,16,49,0x30060000
+LOADC 1,16,1,0x30000000
+SUB 784,26,784,0x1a620000

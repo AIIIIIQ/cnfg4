@@ -1,0 +1,2 @@
+Instruction,Opcode,Operand,Binary
+LOADC 48,16,48,0x10060000

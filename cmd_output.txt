@@ -1,0 +1,130 @@
+C:\Users\a0908\PycharmProjects\cnfg4>run_tests.cmd
+==========================================
+Running test_loadc.asm...
+Assembling completed successfully.
+Executed opcode: 16, operand: 48
+Stack: [48]
+Execution completed successfully.
+Completed test_loadc.asm
+
+==========================================
+Running test_readmem.asm...
+Assembling completed successfully.
+Executed opcode: 16, operand: 100
+Stack: [100]
+Executed opcode: 30, operand: 0
+Memory[100]: 17
+Stack: [17]
+Execution completed successfully.
+Completed test_readmem.asm
+
+==========================================
+Running test_writemem.asm...
+Assembling completed successfully.
+Executed opcode: 16, operand: 555
+Stack: [555]
+Executed opcode: 16, operand: 0
+Stack: [555, 0]
+Executed opcode: 19, operand: 425
+Memory[425]: 555
+Stack: []
+Execution completed successfully.
+Completed test_writemem.asm
+
+==========================================
+Running test_sub.asm...
+Assembling completed successfully.
+Executed opcode: 16, operand: 49
+Stack: [49]
+Executed opcode: 16, operand: 1
+Stack: [49, 1]
+Executed opcode: 26, operand: 784
+Memory[785]: 21
+Stack: [28]
+Execution completed successfully.
+Completed test_sub.asm
+
+==========================================
+Running vector_subtraction.asm...
+Assembling completed successfully.
+Executed opcode: 16, operand: 0
+Stack: [0]
+Executed opcode: 30, operand: 0
+Memory[0]: 10
+Stack: [10]
+Executed opcode: 16, operand: 0
+Stack: [10, 0]
+Executed opcode: 26, operand: 5
+Memory[5]: 1
+Stack: [9]
+Executed opcode: 16, operand: 0
+Stack: [9, 0]
+Executed opcode: 19, operand: 10
+Memory[10]: 9
+Stack: []
+Executed opcode: 16, operand: 1
+Stack: [1]
+Executed opcode: 30, operand: 0
+Memory[1]: 20
+Stack: [20]
+Executed opcode: 16, operand: 1
+Stack: [20, 1]
+Executed opcode: 26, operand: 5
+Memory[6]: 2
+Stack: [18]
+Executed opcode: 16, operand: 1
+Stack: [18, 1]
+Executed opcode: 19, operand: 10
+Memory[11]: 18
+Stack: []
+Executed opcode: 16, operand: 2
+Stack: [2]
+Executed opcode: 30, operand: 0
+Memory[2]: 30
+Stack: [30]
+Executed opcode: 16, operand: 2
+Stack: [30, 2]
+Executed opcode: 26, operand: 5
+Memory[7]: 3
+Stack: [27]
+Executed opcode: 16, operand: 2
+Stack: [27, 2]
+Executed opcode: 19, operand: 10
+Memory[12]: 27
+Stack: []
+Executed opcode: 16, operand: 3
+Stack: [3]
+Executed opcode: 30, operand: 0
+Memory[3]: 40
+Stack: [40]
+Executed opcode: 16, operand: 3
+Stack: [40, 3]
+Executed opcode: 26, operand: 5
+Memory[8]: 4
+Stack: [36]
+Executed opcode: 16, operand: 3
+Stack: [36, 3]
+Executed opcode: 19, operand: 10
+Memory[13]: 36
+Stack: []
+Executed opcode: 16, operand: 4
+Stack: [4]
+Executed opcode: 30, operand: 0
+Memory[4]: 50
+Stack: [50]
+Executed opcode: 16, operand: 3
+Stack: [50, 3]
+Executed opcode: 26, operand: 5
+Memory[8]: 4
+Stack: [46]
+Executed opcode: 16, operand: 4
+Stack: [46, 4]
+Executed opcode: 19, operand: 10
+Memory[14]: 46
+Stack: []
+Execution completed successfully.
+Completed vector_subtraction.asm
+
+==========================================
+All tests have been executed.
+Для продолжения нажмите любую клавишу . . .
