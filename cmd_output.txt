@@ -1,4 +1,3 @@
-C:\Users\a0908\PycharmProjects\cnfg4>run_tests.cmd
 ==========================================
 Running test_loadc.asm...
 Assembling completed successfully.
