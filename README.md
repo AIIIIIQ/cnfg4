@@ -1,22 +1,25 @@
 # Разработка ассемблера и интерпретатора для учебной виртуальной машины (УВМ)
 
-## План работы
+## Оглавление
 
-1. **Понимание системы команд УВМ:**
-   - Разобрать структуру каждой команды.
-   - Понять, как закодированы команды в бинарном файле.
-2. **Разработка ассемблера:**
-   - Определить читаемое представление команд.
-   - Реализовать парсер исходного текста программы.
-   - Реализовать генерацию бинарного файла.
-   - Создать лог-файл с ассемблированными инструкциями в формате `ключ=значение`.
-3. **Разработка интерпретатора:**
-   - Реализовать загрузку бинарного файла.
-   - Реализовать выполнение команд УВМ.
-   - Реализовать вывод значений из диапазона памяти в файл-результат в формате CSV.
-4. **Тестирование:**
-   - Реализовать тесты для каждой команды, используя предоставленные тестовые данные.
-   - Написать и отладить тестовую программу для выполнения поэлементного вычитания над двумя векторами длины 5.
+1. [Понимание системы команд УВМ](#1-понимание-системы-команд-увм)
+   - [Структура команды](#структура-команды)
+   - [Команды и их описание](#команды-и-их-описание)
+2. [Разработка ассемблера](#2-разработка-ассемблера)
+   - [Читаемое представление команд](#21-читаемое-представление-команд)
+   - [Реализация ассемблера](#22-реализация-ассемблера)
+3. [Разработка интерпретатора](#3-разработка-интерпретатора)
+   - [Реализация интерпретатора](#31-реализация-интерпретатора)
+4. [Тестирование](#4-тестирование)
+   - [Тесты ассемблера](#41-тесты-ассемблера)
+   - [Тесты интерпретатора](#42-тесты-интерпретатора)
+   - [Запуск тестов](#43-запуск-тестов)
+5. [Тестовая программа](#5-тестовая-программа)
+6. [Примеры запуска](#6-примеры-запуска)
+7. [Результаты тестирования](#7-результаты-тестирования)
+8. [Примечания](#8-примечания)
+
+---
 
 ## 1. Понимание системы команд УВМ
 
@@ -25,8 +28,9 @@
 Каждая команда УВМ имеет размер 4 байта (32 бита). Биты команды распределены следующим образом:
 
 - **Биты 0–4 (5 бит):** Код операции (A).
-- **Биты 5–17 (13 бит):** Операнд или дополнительные данные (B).
-- **Биты 18–31 (14 бит):** Зарезервированы или не используются (устанавливаются в ноль).
+- **Биты 5–N:** Операнд или дополнительные данные (B).
+  - Количество бит в операнде зависит от команды (N может быть разным для разных команд).
+- **Оставшиеся биты устанавливаются в ноль.**
 
 **Примечание:** Нумерация битов начинается с младшего бита (самого правого).
 
@@ -35,7 +39,8 @@
 1. **Загрузка константы**
 
    - **Код операции (A):** 16
-   - **Операнд (B):** 16-битное значение, которое будет помещено на стек.
+   - **Операнд (B):** Значение, которое будет помещено на стек.
+     - **Биты операнда:** 13 бит (биты 5–17)
    - **Описание:** Помещает значение B на вершину стека.
    - **Тестовый пример:** A=16, B=48
      - Бинарная команда: `0x10, 0x06, 0x00, 0x00`
@@ -44,6 +49,7 @@
 
    - **Код операции (A):** 30
    - **Описание:** Снимает адрес с вершины стека, читает значение из памяти по этому адресу, помещает его на стек.
+   - **Операнд не используется.**
    - **Тестовый пример:** A=30
      - Бинарная команда: `0x1E, 0x00, 0x00, 0x00`
 
@@ -51,17 +57,24 @@
 
    - **Код операции (A):** 19
    - **Операнд (B):** Смещение
+     - **Биты операнда:** 11 бит (биты 5–15)
    - **Описание:** Снимает значение и адрес с вершины стека, записывает значение в память по адресу `адрес + смещение`.
    - **Тестовый пример:** A=19, B=425
-     - Бинарная команда: `0x33, 0x35, 0x00, 0x00`
+     - Бинарная команда: `0x13, 0xA9, 0x03, 0x00`
 
 4. **Бинарная операция: вычитание**
 
    - **Код операции (A):** 26
    - **Операнд (B):** Смещение
-   - **Описание:** Снимает значение и адрес с вершины стека, читает второе значение из памяти по адресу `адрес + смещение`, вычитает второе значение из первого, результат помещает на стек.
+     - **Биты операнда:** 11 бит (биты 5–15)
+   - **Описание:**
+     - **Первый операнд:** снимается с вершины стека.
+     - **Адрес для второго операнда:** снимается со стека и к нему добавляется смещение (B).
+     - **Второй операнд:** значение из памяти по вычисленному адресу.
+     - **Операция:** первый операнд минус второй операнд.
+     - **Результат:** помещается на стек.
    - **Тестовый пример:** A=26, B=784
-     - Бинарная команда: `0x1A, 0x62, 0x00, 0x00`
+     - Бинарная команда: `0x1A, 0x10, 0x03, 0x00`
 
 ## 2. Разработка ассемблера
 
@@ -80,7 +93,7 @@
 
 ### 2.2. Реализация ассемблера
 
-Ассемблер будет состоять из следующих шагов:
+Ассемблер реализует следующие шаги:
 
 1. **Парсинг исходного файла:**
    - Чтение исходного файла построчно.
@@ -89,24 +102,24 @@
    - Кодирование каждой команды в соответствии с заданной структурой.
    - Запись бинарных данных в выходной файл.
 3. **Создание лог-файла:**
-   - Запись ассемблированных инструкций в формате `ключ=значение` в лог-файл.
+   - Запись ассемблированных инструкций в формате CSV.
 
 - **Класс `Assembler`:**
   - Метод `assemble` читает входной файл, разбирает команды и записывает бинарный код и лог.
   - Метод `encode_instruction` кодирует команду в 4-байтовое бинарное представление.
-- **Используется модуль `struct`** для упаковки чисел в бинарный формат.
+  - Кодирование учитывает количество бит для операнда, которое зависит от команды.
 
 **Запуск ассемблера:**
 
 ```bash
-assembler.py -i <input_program.asm> -o <output_program.bin> -l <program_log.csv>
+python assembler.py -i <input_program.asm> -o <output_program.bin> -l <program_log.csv>
 ```
 
 ## 3. Разработка интерпретатора
 
-### 3.1. Реализация интерпретатора
+### Реализация интерпретатора
 
-Интерпретатор будет выполнять следующие действия:
+Интерпретатор выполняет следующие действия:
 
 1. **Загрузка бинарного файла:**
    - Чтение бинарного файла и разбор инструкций.
@@ -115,200 +128,172 @@ assembler.py -i <input_program.asm> -o <output_program.bin> -l <program_log.csv>
    - Инициализация стека.
 3. **Выполнение инструкций:**
    - Последовательное выполнение инструкций из бинарного файла.
+   - Обработка каждой инструкции в соответствии с ее кодом операции.
 4. **Сохранение результатов:**
    - Запись значений из указанного диапазона памяти в CSV-файл.
 
 - **Класс `Interpreter`:**
-  - Инициализирует память и стек.
   - Метод `run` выполняет инструкции из бинарного файла.
   - Обрабатывает каждый код операции в соответствии с его функциональностью.
-  - Записывает содержимое памяти в указанный диапазон в CSV-файл.
+  - Учитывает количество бит операнда для каждой команды.
+  - Метод `run_instructions` содержит логику выполнения инструкций.
 
-### 3.2. Запуск интерпретатора
+**Запуск интерпретатора:**
 
 ```bash
-interpreter.py -i <output_program.bin> -o <result_output.csv> --mem-start <start_address> --mem-end <end_address>
+python interpreter.py -i <output_program.bin> -o <result_output.csv> --mem-start <start_address> --mem-end <end_address>
 ```
 
 ## 4. Тестирование
 
-### 4.1. Сценарий для запуска тестов
+### 4.1. Тесты ассемблера
 
-- **Файл `run_tests.cmd`:**
-```
-@echo off
+- **Файл `test_assembler.py`** содержит тесты для каждой команды.
+- Проверяется корректность кодирования инструкций.
+- Тесты проверяют, что бинарный код, генерируемый ассемблером, соответствует ожидаемому.
 
-echo ==========================================
-echo Running test_loadc.asm...
-assembler.py -i test_loadc.asm -o test_loadc.bin -l test_loadc_log.csv
-interpreter.py -i test_loadc.bin -o test_loadc_result.csv --mem-start 0 --mem-end 0
-echo Completed test_loadc.asm
-echo.
+### 4.2. Тесты интерпретатора
 
-echo ==========================================
-echo Running test_readmem.asm...
-assembler.py -i test_readmem.asm -o test_readmem.bin -l test_readmem_log.csv
-interpreter.py -i test_readmem.bin -o test_readmem_result.csv --mem-start 0 --mem-end 0
-echo Completed test_readmem.asm
-echo.
+- **Файл `test_interpreter.py`** содержит тесты для выполнения каждой команды.
+- Проверяется корректность выполнения инструкций интерпретатором.
+- Тесты проверяют, что состояние стека и памяти после выполнения инструкций соответствует ожидаемому.
 
-echo ==========================================
-echo Running test_writemem.asm...
-assembler.py -i test_writemem.asm -o test_writemem.bin -l test_writemem_log.csv
-interpreter.py -i test_writemem.bin -o test_writemem_result.csv --mem-start 225 --mem-end 225
-echo Completed test_writemem.asm
-echo.
+### 4.3. Запуск тестов
 
-echo ==========================================
-echo Running test_sub.asm...
-assembler.py -i test_sub.asm -o test_sub.bin -l test_sub_log.csv
-interpreter.py -i test_sub.bin -o test_sub_result.csv --mem-start 0 --mem-end 0
-echo Completed test_sub.asm
-echo.
-
-echo ==========================================
-echo Running vector_subtraction.asm...
-assembler.py -i vector_subtraction.asm -o vector_subtraction.bin -l vector_subtraction_log.csv
-interpreter.py -i vector_subtraction.bin -o vector_subtraction_result.csv --mem-start 10 --mem-end 14
-echo Completed vector_subtraction.asm
-echo.
-
-echo ==========================================
-echo All tests have been executed.
-pause
+```bash
+python test_assembler.py
+python test_interpreter.py
 ```
 
+## 5. Тестовая программа
 
-### 4.2. Результат выполнения тестов
+**Файл:** `vector_subtraction.asm`
+
+Выполняет поэлементное вычитание двух векторов длиной 5. Результат записывается в новый вектор.
+
+- Вектор A хранится в памяти по адресам 0–4.
+- Вектор B хранится в памяти по адресам 5–9.
+- Результат (A[i] - B[i]) записывается в память по адресам 10–14.
+
+Программа:
+
+```asm
+; Поэлементное вычитание двух векторов длиной 5
+
+; Обработка элемента 0
+LOADC 0
+READMEM
+LOADC 5
+SUB 0
+LOADC 10
+WRITEMEM 0
+
+; Обработка элемента 1
+LOADC 1
+READMEM
+LOADC 6
+SUB 0
+LOADC 11
+WRITEMEM 0
+
+; Обработка элемента 2
+LOADC 2
+READMEM
+LOADC 7
+SUB 0
+LOADC 12
+WRITEMEM 0
+
+; Обработка элемента 3
+LOADC 3
+READMEM
+LOADC 8
+SUB 0
+LOADC 13
+WRITEMEM 0
+
+; Обработка элемента 4
+LOADC 4
+READMEM
+LOADC 9
+SUB 0
+LOADC 14
+WRITEMEM 0
+```
+
+## 6. Примеры запуска
+
+### Ассемблирование программы:
+
+```bash
+python assembler.py -i vector_subtraction.asm -o vector_subtraction.bin -l vector_subtraction_log.csv
+```
+
+### Выполнение программы:
+
+```bash
+python interpreter.py -i vector_subtraction.bin -o result_output.csv --mem-start 10 --mem-end 14
+```
+
+## 7. Результаты тестирования
+
+### Запуск тестов
+
+```bash
+python test_assembler.py
+python test_interpreter.py
+```
+
+### Вывод тестов
+
+#### Тесты ассемблера:
 
 ```
-==========================================
-Running test_loadc.asm...
-Assembling completed successfully.
-Executed opcode: 16, operand: 48
-Stack: [48]
-Execution completed successfully.
-Completed test_loadc.asm
+....
+----------------------------------------------------------------------
+Ran 4 tests in 0.005s
 
-==========================================
-Running test_readmem.asm...
-Assembling completed successfully.
-Executed opcode: 16, operand: 100
-Stack: [100]
-Executed opcode: 30, operand: 0
-Memory[100]: 17
-Stack: [17]
-Execution completed successfully.
-Completed test_readmem.asm
+OK
+```
 
-==========================================
-Running test_writemem.asm...
-Assembling completed successfully.
-Executed opcode: 16, operand: 555
-Stack: [555]
-Executed opcode: 16, operand: 0
-Stack: [555, 0]
-Executed opcode: 19, operand: 425
-Memory[425]: 555
-Stack: []
-Execution completed successfully.
-Completed test_writemem.asm
+#### Тесты интерпретатора:
 
-==========================================
-Running test_sub.asm...
-Assembling completed successfully.
-Executed opcode: 16, operand: 49
-Stack: [49]
-Executed opcode: 16, operand: 1
-Stack: [49, 1]
-Executed opcode: 26, operand: 784
-Memory[785]: 21
-Stack: [28]
-Execution completed successfully.
-Completed test_sub.asm
+```
+Memory[10] = 9, Expected: 9
+Memory[11] = 18, Expected: 18
+Memory[12] = 27, Expected: 27
+Memory[13] = 36, Expected: 36
+Memory[14] = 45, Expected: 45
+.....
+----------------------------------------------------------------------
+Ran 5 tests in 0.005s
 
-==========================================
-Running vector_subtraction.asm...
-Assembling completed successfully.
-Executed opcode: 16, operand: 0
-Stack: [0]
-Executed opcode: 30, operand: 0
-Memory[0]: 10
-Stack: [10]
-Executed opcode: 16, operand: 0
-Stack: [10, 0]
-Executed opcode: 26, operand: 5
-Memory[5]: 1
-Stack: [9]
-Executed opcode: 16, operand: 0
-Stack: [9, 0]
-Executed opcode: 19, operand: 10
-Memory[10]: 9
-Stack: []
-Executed opcode: 16, operand: 1
-Stack: [1]
-Executed opcode: 30, operand: 0
-Memory[1]: 20
-Stack: [20]
-Executed opcode: 16, operand: 1
-Stack: [20, 1]
-Executed opcode: 26, operand: 5
-Memory[6]: 2
-Stack: [18]
-Executed opcode: 16, operand: 1
-Stack: [18, 1]
-Executed opcode: 19, operand: 10
-Memory[11]: 18
-Stack: []
-Executed opcode: 16, operand: 2
-Stack: [2]
-Executed opcode: 30, operand: 0
-Memory[2]: 30
-Stack: [30]
-Executed opcode: 16, operand: 2
-Stack: [30, 2]
-Executed opcode: 26, operand: 5
-Memory[7]: 3
-Stack: [27]
-Executed opcode: 16, operand: 2
-Stack: [27, 2]
-Executed opcode: 19, operand: 10
-Memory[12]: 27
-Stack: []
-Executed opcode: 16, operand: 3
-Stack: [3]
-Executed opcode: 30, operand: 0
-Memory[3]: 40
-Stack: [40]
-Executed opcode: 16, operand: 3
-Stack: [40, 3]
-Executed opcode: 26, operand: 5
-Memory[8]: 4
-Stack: [36]
-Executed opcode: 16, operand: 3
-Stack: [36, 3]
-Executed opcode: 19, operand: 10
-Memory[13]: 36
-Stack: []
-Executed opcode: 16, operand: 4
-Stack: [4]
-Executed opcode: 30, operand: 0
-Memory[4]: 50
-Stack: [50]
-Executed opcode: 16, operand: 3
-Stack: [50, 3]
-Executed opcode: 26, operand: 5
-Memory[8]: 4
-Stack: [46]
-Executed opcode: 16, operand: 4
-Stack: [46, 4]
-Executed opcode: 19, operand: 10
-Memory[14]: 46
-Stack: []
-Execution completed successfully.
-Completed vector_subtraction.asm
+OK
+```
 
-==========================================
-All tests have been executed.
-Для продолжения нажмите любую клавишу . . .
-  ```
+### Результат выполнения `vector_subtraction.asm`
+
+После выполнения программы `vector_subtraction.asm`, в памяти по адресам 10–14 находятся результаты вычитания:
+
+```
+Address,Value
+10,9
+11,18
+12,27
+13,36
+14,45
+```
+
+## 8. Примечания
+
+- **Требования:** Python 3.x
+- **Входные файлы:**
+  - Ассемблер принимает файлы с расширением `.asm`.
+  - Интерпретатор принимает бинарные файлы, созданные ассемблером.
+- **Логи и результаты:**
+  - Ассемблер и интерпретатор генерируют CSV-файлы с логами и результатами выполнения.
+- **Запуск тестов:**
+  - Тестовые файлы `test_assembler.py` и `test_interpreter.py` содержат подробные тесты для каждой команды.
+- **Обработка ошибок:**
+  - Ассемблер и интерпретатор проверяют корректность входных данных и выдают понятные сообщения об ошибках.
+---
