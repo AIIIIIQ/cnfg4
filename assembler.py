@@ -8,61 +8,99 @@ class Assembler:
 
     def assemble(self, input_file, output_file, log_file):
         with open(input_file, 'r') as f:
-            lines = f.readlines()
+            code = f.read()
+        self.assemble_code(code)
 
         with open(log_file, 'w', newline='') as csvfile:
             log_writer = csv.writer(csvfile)
             log_writer.writerow(['Instruction', 'Opcode', 'Operand', 'Binary'])
 
-            for line in lines:
-                line = line.strip()
-                if not line or line.startswith(';'):
-                    continue  # Пропускаем пустые строки и комментарии
-                parts = line.split()
-                instr = parts[0].upper()
-                if instr == 'LOADC':
-                    value = int(parts[1])
-                    opcode = 16  # Код операции A=16
-                    operand = value  # Поле B
-                    binary = self.encode_instruction(opcode, operand)
-                    self.instructions.append(binary)
-                    log_writer.writerow([line, opcode, operand, self.format_binary(binary)])
-                elif instr == 'READMEM':
-                    opcode = 30  # Код операции A=30
-                    operand = 0  # Поле B не используется
-                    binary = self.encode_instruction(opcode, operand)
-                    self.instructions.append(binary)
-                    log_writer.writerow([line, opcode, operand, self.format_binary(binary)])
-                elif instr == 'WRITEMEM':
-                    if len(parts) < 2:
-                        raise ValueError(f"Missing operand for WRITEMEM in line: {line}")
-                    offset = int(parts[1])  # Поле B
-                    opcode = 19  # Код операции A=19
-                    binary = self.encode_instruction(opcode, offset)
-                    self.instructions.append(binary)
-                    log_writer.writerow([line, opcode, offset, self.format_binary(binary)])
-
-                elif instr == 'SUB':
-                    if len(parts) < 2:
-                        raise ValueError(f"Missing operand for SUB in line: {line}")
-                    offset = int(parts[1])  # Поле B
-                    opcode = 26  # Код операции A=26
-                    binary = self.encode_instruction(opcode, offset)
-                    self.instructions.append(binary)
-                    log_writer.writerow([line, opcode, offset, self.format_binary(binary)])
-                else:
-                    raise ValueError(f'Unknown instruction: {instr}')
+            for instr_info in self.instructions_info:
+                log_writer.writerow([
+                    instr_info['line'],
+                    instr_info['opcode'],
+                    instr_info['operand'],
+                    instr_info['binary']
+                ])
 
         with open(output_file, 'wb') as f:
             for instr in self.instructions:
                 f.write(instr.to_bytes(4, byteorder='little'))
 
-    def encode_instruction(self, opcode, operand):
+    def assemble_code(self, code):
+        self.instructions = []
+        self.instructions_info = []
+        lines = code.strip().split('\n')
+        for line in lines:
+            line = line.strip()
+            if not line or line.startswith(';'):
+                continue  # Пропускаем пустые строки и комментарии
+            parts = line.split()
+            instr = parts[0].upper()
+            if instr == 'LOADC':
+                if len(parts) < 2:
+                    raise ValueError(f"Missing operand for LOADC in line: {line}")
+                value = int(parts[1])
+                opcode = 16  # Код операции A=16
+                operand = value  # Поле B
+                operand_bits = 13  # Биты 5-17 (13 бит)
+                binary = self.encode_instruction(opcode, operand, operand_bits)
+                self.instructions.append(binary)
+                self.instructions_info.append({
+                    'line': line,
+                    'opcode': opcode,
+                    'operand': operand,
+                    'binary': self.format_binary(binary)
+                })
+            elif instr == 'READMEM':
+                opcode = 30  # Код операции A=30
+                operand = 0  # Поле B не используется
+                operand_bits = 0  # Операнд отсутствует
+                binary = self.encode_instruction(opcode, operand, operand_bits)
+                self.instructions.append(binary)
+                self.instructions_info.append({
+                    'line': line,
+                    'opcode': opcode,
+                    'operand': operand,
+                    'binary': self.format_binary(binary)
+                })
+            elif instr == 'WRITEMEM':
+                if len(parts) < 2:
+                    raise ValueError(f"Missing operand for WRITEMEM in line: {line}")
+                offset = int(parts[1])  # Поле B
+                opcode = 19  # Код операции A=19
+                operand_bits = 11  # Биты 5-15 (11 бит)
+                binary = self.encode_instruction(opcode, offset, operand_bits)
+                self.instructions.append(binary)
+                self.instructions_info.append({
+                    'line': line,
+                    'opcode': opcode,
+                    'operand': offset,
+                    'binary': self.format_binary(binary)
+                })
+            elif instr == 'SUB':
+                if len(parts) < 2:
+                    raise ValueError(f"Missing operand for SUB in line: {line}")
+                offset = int(parts[1])  # Поле B
+                opcode = 26  # Код операции A=26
+                operand_bits = 11  # Биты 5-15 (11 бит)
+                binary = self.encode_instruction(opcode, offset, operand_bits)
+                self.instructions.append(binary)
+                self.instructions_info.append({
+                    'line': line,
+                    'opcode': opcode,
+                    'operand': offset,
+                    'binary': self.format_binary(binary)
+                })
+            else:
+                raise ValueError(f'Unknown instruction: {instr}')
+
+    def encode_instruction(self, opcode, operand, operand_bits):
         # opcode: биты 0-4 (5 бит)
-        # operand: биты 5-17 (13 бит)
         instruction = (opcode & 0b11111)  # 5 бит для opcode
-        instruction |= (operand & 0b1111111111111) << 5  # 13 бит для operand
-        # Остальные биты (18-31) устанавливаются в 0
+        if operand_bits > 0:
+            instruction |= (operand & ((1 << operand_bits) - 1)) << 5  # operand_bits для операнда
+        # Остальные биты устанавливаются в 0
         return instruction
 
     def format_binary(self, value):

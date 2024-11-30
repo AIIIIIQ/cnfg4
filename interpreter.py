@@ -2,6 +2,13 @@ import sys
 import argparse
 import csv
 
+INSTRUCTION_SET = {
+    16: {'name': 'LOADC', 'operand_bits': 13},
+    19: {'name': 'WRITEMEM', 'operand_bits': 11},
+    26: {'name': 'SUB', 'operand_bits': 11},
+    30: {'name': 'READMEM', 'operand_bits': 0},
+}
+
 class Interpreter:
     def __init__(self):
         self.memory = [0] * 1024  # Память УВМ
@@ -15,10 +22,9 @@ class Interpreter:
         self.memory[0:5] = [10, 20, 30, 40, 50]  # Вектор A
         self.memory[5:10] = [1, 2, 3, 4, 5]  # Вектор B
 
-
         self.memory[100] = 17  # Для READMEM
 
-        self.memory[785] = 21   # Для SUB
+        self.memory[310] = 20  # Для SUB (300 + 10)
 
     def run(self, binary_file, result_file, mem_start, mem_end):
         # Инициализация памяти
@@ -29,44 +35,7 @@ class Interpreter:
             binary_data = f.read()
         instructions = [int.from_bytes(binary_data[i:i+4], byteorder='little') for i in range(0, len(binary_data), 4)]
 
-        pc = 0  # Счётчик команд
-        while pc < len(instructions):
-            instr = instructions[pc]
-            opcode = instr & 0b11111  # Биты 0-4
-            operand = (instr >> 5) & 0b1111111111111  # Биты 5-17
-
-
-            print(f'Executed opcode: {opcode}, operand: {operand}')
-
-            if opcode == 16:  # LOADC
-                self.stack.append(operand)
-            elif opcode == 30:  # READMEM
-                address = self.stack.pop()
-                value = self.memory[address]
-                print(f'Memory[{address}]: {self.memory[address]}')
-
-                self.stack.append(value)
-            elif opcode == 19:  # WRITEMEM
-                address = self.stack.pop() + operand  # Адрес записи из стека + операнд
-                value = self.stack.pop()  # Значение для записи
-
-                # Запись значения в память
-                self.memory[address] = value
-                print(f'Memory[{address}]: {self.memory[address]}')
-            elif opcode == 26:  # SUB
-                address = self.stack.pop() + operand  # Адрес с учётом смещения
-                value1 = self.stack.pop()  # Первый операнд (из стека)
-                value2 = self.memory[address]  # Второй операнд из памяти
-                print(f'Memory[{address}]: {self.memory[address]}')
-                result = value1 - value2
-                self.stack.append(result)
-            else:
-                raise ValueError(f'Unknown opcode: {opcode}')
-
-            # Отладочная информация
-            print(f'Stack: {self.stack}')
-
-            pc += 1  # Переход к следующей инструкции
+        self.run_instructions(instructions)
 
         # Сохранение результатов из памяти
         with open(result_file, 'w', newline='') as csvfile:
@@ -76,6 +45,42 @@ class Interpreter:
                 result_writer.writerow([addr, self.memory[addr]])
 
         print('Execution completed successfully.')
+
+    def run_instructions(self, instructions):
+        self.stack = []
+        pc = 0
+        while pc < len(instructions):
+            instr = instructions[pc]
+            opcode = instr & 0b11111  # Биты 0-4
+
+            if opcode not in INSTRUCTION_SET:
+                raise ValueError(f'Unknown opcode: {opcode}')
+
+            operand_bits = INSTRUCTION_SET[opcode]['operand_bits']
+            operand_mask = (1 << operand_bits) - 1 if operand_bits > 0 else 0
+            operand = (instr >> 5) & operand_mask  # Извлекаем операнд
+
+            # Обработка инструкций
+            if opcode == 16:  # LOADC
+                self.stack.append(operand)
+            elif opcode == 30:  # READMEM
+                address = self.stack.pop()
+                value = self.memory[address]
+                self.stack.append(value)
+            elif opcode == 19:  # WRITEMEM
+                address = self.stack.pop() + operand
+                value = self.stack.pop()
+                self.memory[address] = value
+            elif opcode == 26:  # SUB
+                address = self.stack.pop() + operand
+                value1 = self.stack.pop()
+                value2 = self.memory[address]
+                result = value1 - value2
+                self.stack.append(result)
+            else:
+                raise ValueError(f'Unknown opcode: {opcode}')
+
+            pc += 1  # Переход к следующей инструкции
 
 def main():
     parser = argparse.ArgumentParser(description='Interpreter for UVM')
