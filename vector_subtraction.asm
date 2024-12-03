@@ -6,21 +6,60 @@
 ; Вектор B находится по адресам 5-9
 ; Результат записывается по адр 10-14
 
-; Обработка элемента 0
-; Адрес первого элемента вектора A
+
+
+LOADC 10
 LOADC 0
+WRITEMEM 0
+LOADC 20
+LOADC 1
+WRITEMEM 0
+LOADC 30
+LOADC 2
+WRITEMEM 0
+LOADC 40
+LOADC 3
+WRITEMEM 0
+LOADC 50
+LOADC 4
+WRITEMEM 0
+
+LOADC 1
+LOADC 0
+WRITEMEM 5
+LOADC 2
+LOADC 1
+WRITEMEM 5
+LOADC 3
+LOADC 2
+WRITEMEM 5
+LOADC 4
+LOADC 3
+WRITEMEM 5
+LOADC 5
+LOADC 4
+WRITEMEM 5
+
+
+
+; Обработка элемента 0
+
+
+; Адрес первого элемента вектора A
 ; Чтение A[0], результат на стеке
+; Адрес первого элемента вектора B
+; Вычитание B[0] из A[0], результат на стеке
+; Адрес для записи результата
+; Запись результата
+
+LOADC 0
 READMEM
 
-; Адрес первого элемента вектора B
 LOADC 0
 
-; Вычитание B[0] из A[0], результат на стеке
 SUB 5
 
-; Адрес для записи результата
 LOADC 0
-; Запись результата
 WRITEMEM 10
 
 ; Повторение для элементов 1-4
@@ -52,7 +91,7 @@ WRITEMEM 10
 ; Элемент 4
 LOADC 4
 READMEM
-LOADC 3
+LOADC 4
 SUB 5
 LOADC 4
 WRITEMEM 10

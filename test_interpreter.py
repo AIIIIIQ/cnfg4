@@ -65,9 +65,9 @@ class TestInterpreter(unittest.TestCase):
         self.interpreter.initialize_memory()
 
         # Инициализируем вектор A в памяти по адресам 0-4
-        self.interpreter.memory[0:5] = [10, 20, 30, 40, 50]
+        #self.interpreter.memory[0:5] = [10, 20, 30, 40, 50]
         # Инициализируем вектор B в памяти по адресам 5-9
-        self.interpreter.memory[5:10] = [1, 2, 3, 4, 5]
+        #self.interpreter.memory[5:10] = [1, 2, 3, 4, 5]
 
         self.interpreter.run_instructions(self.assembler.instructions)
         # Проверяем результат вычитания в памяти
